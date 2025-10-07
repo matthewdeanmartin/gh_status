@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 import re
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 import pytz
@@ -51,9 +51,9 @@ def build_inventory(client: github_client.GitHubClient, username: str) -> schema
     for repo in repos:
         if repo.full in hot_repo_names:
             logger.info("Fetching details for hot repo: %s", repo.full)
-            # Fetch detailed content
-            repo.readme = client.get_file_content(repo.full, "README.md")
-            repo.changelog = client.get_file_content(repo.full, "CHANGELOG.md")
+            # Fetch detailed content using the repo's specific default_branch
+            repo.readme = client.get_file_content(repo.full, "README.md", branch=repo.default_branch)
+            repo.changelog = client.get_file_content(repo.full, "CHANGELOG.md", branch=repo.default_branch)
             repo.recent_files = client.get_recent_file_changes(repo.full)
 
     return schemas.Inventory(
@@ -69,16 +69,18 @@ def build_todos(client: github_client.GitHubClient, inventory: schemas.Inventory
     """
     repo_todos_list = []
 
-    # Files to check for TODOs, in order of preference
-    todo_filenames = ["docs/TODO.md", "TODO.md", "todo.md", "docs/ROADMAP.md"]
+    todo_filenames = ["docs/TODO.md",
+                      # "TODO.md", "todo.md",
+                      # "docs/ROADMAP.md"
+                      ]
 
     for repo in inventory.repo:
         repo_todos = schemas.RepoTodosItem(full=repo.full)
 
-        # 1. Look for a TODO file
+        # 1. Look for a TODO file on the correct branch
         todo_content = None
         for filename in todo_filenames:
-            content = client.get_file_content(repo.full, filename)
+            content = client.get_file_content(repo.full, filename, branch=repo.default_branch)
             if content:
                 logger.info("Found TODOs for %s in %s", repo.full, filename)
                 todo_content = content
@@ -87,14 +89,13 @@ def build_todos(client: github_client.GitHubClient, inventory: schemas.Inventory
         if todo_content:
             repo_todos.todos = _parse_todos_from_content(todo_content)
 
-        # 2. Get synopsis from README
-        readme_content = repo.readme or client.get_file_content(repo.full, "README.md")
+        # 2. Get synopsis from README on the correct branch
+        readme_content = repo.readme or client.get_file_content(repo.full, "README.md", branch=repo.default_branch)
         if readme_content:
-            # Extract first few non-empty lines as synopsis
             synopsis_lines = [
                 line.strip() for line in readme_content.strip().splitlines()
                 if line.strip() and not line.strip().startswith("#")
-            ][:5]  # Cap at 5 lines
+            ][:5]
             repo_todos.synopsis = synopsis_lines
 
         repo_todos_list.append(repo_todos)
@@ -113,13 +114,14 @@ def build_activity(
         window_days: int
 ) -> schemas.Activity:
     """Builds the activity feed for a given time window (e.g., 7 or 30 days)."""
-    now_utc = datetime.utcnow()
+    # CORRECT WAY to get an offset-aware UTC timestamp
+    now_utc = datetime.now(timezone.utc)
     window_start_utc = now_utc - timedelta(days=window_days)
     local_tz = pytz.timezone(tz_name)
 
     all_events = client.get_public_events()
 
-    # Filter events within the window
+    # Filter events within the window (this comparison will now work correctly)
     window_events = [
         e for e in all_events
         if datetime.fromisoformat(e["created_at"].replace("Z", "+00:00")) >= window_start_utc
@@ -143,7 +145,6 @@ def build_activity(
     streak = 0
     if active_days:
         streak = 1
-        # Check consecutive days backwards from the last active day
         current_day = datetime.strptime(active_days[-1], "%Y-%m-%d").date()
         for i in range(len(active_days) - 2, -1, -1):
             prev_day = datetime.strptime(active_days[i], "%Y-%m-%d").date()
@@ -179,7 +180,6 @@ def build_activity(
         repo_name_full = event["repo"]["name"]
         repo_owner, repo_name_short = repo_name_full.split('/')
 
-        # Simplify payload into a title and optional details
         title = f"{event['type']} on {repo_name_full}"
         commits = None
         url = f"https://github.com/{repo_name_full}"

@@ -7,9 +7,11 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+import dotenv
 import pytz
 
 from gh_status import builder, github_client, writers
+dotenv.load_dotenv()
 
 # --- Logging Setup ---
 logging.basicConfig(
@@ -103,13 +105,12 @@ def main() -> int:
                 activity_path = output_dir / f"latest-{days}d.toml"
                 writers.write_toml(activity_path, activity)
                 writers.write_html_wrapper(activity_path)
-
+        logger.info("✅ Successfully generated all feeds in '%s'.", output_dir)
+        return 0
     except Exception:
         logger.exception("An unhandled error occurred during feed generation.")
         return 1
 
-    logger.info("✅ Successfully generated all feeds in '%s'.", output_dir)
-    return 0
 
 if __name__ == '__main__':
     main()

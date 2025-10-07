@@ -101,9 +101,9 @@ class GitHubClient:
         url = f"{API_URL}/users/{self.username}/events/public?per_page=100"
         return self._get_paginated(url)
 
-    def get_file_content(self, repo_full_name: str, file_path: str) -> Optional[str]:
+    def get_file_content(self, repo_full_name: str, file_path: str, branch: str) -> Optional[str]:
         """
-        Fetches the content of a specific file from a repository.
+        Fetches the content of a specific file from a repository's specific branch.
         Returns None if the file is not found.
         """
         if not self.client:
@@ -113,15 +113,17 @@ class GitHubClient:
         try:
             # Use a specific header to get raw content directly
             headers = {"Accept": "application/vnd.github.raw"}
-            response = self.client.get(url, headers=headers)
+            # Explicitly pass the branch name as a query parameter
+            params = {"ref": branch}
+            response = self.client.get(url, headers=headers, params=params)
 
             if response.status_code == 404:
-                logger.debug("File not found: %s in %s", file_path, repo_full_name)
+                logger.debug("File not found on branch '%s': %s in %s", branch, file_path, repo_full_name)
                 return None
             response.raise_for_status()
             return response.text
         except httpx.HTTPStatusError as e:
-            logger.warning("Could not fetch file %s from %s: %s", file_path, repo_full_name, e)
+            logger.warning("Could not fetch file %s from %s (branch: %s): %s", file_path, repo_full_name, branch, e)
             return None
 
     def get_recent_file_changes(self, repo_full_name: str) -> Optional[List[str]]:

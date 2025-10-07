@@ -29,7 +29,7 @@ def write_toml(path: Path, data: BaseModel) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        data_dict = data.model_dump(mode='json')
+        data_dict = data.model_dump(mode='json',exclude_none=True)
         toml_content = tomlkit.dumps(data_dict)
 
         path.write_text(toml_content, encoding="utf-8")
@@ -47,7 +47,7 @@ def write_html_wrapper(toml_path: Path) -> None:
     """
     html_path = toml_path.with_suffix(toml_path.suffix + ".html")
     try:
-        template = jinja_env.get_template("wrapper.jinja2")
+        template = jinja_env.get_template("wrapper.html.jinja2")
         toml_content = toml_path.read_text(encoding="utf-8")
 
         html_content = template.render(
@@ -60,3 +60,4 @@ def write_html_wrapper(toml_path: Path) -> None:
         logger.error("Cannot create HTML wrapper: source file %s not found.", toml_path)
     except Exception as e:
         logger.error("Failed to write HTML wrapper to %s: %s", html_path, e)
+        raise
