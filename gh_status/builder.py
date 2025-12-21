@@ -196,9 +196,9 @@ def build_activity(
                 url = f"https://github.com/{repo_name_full}/tree/{event['payload']['ref']}"
         elif event["type"] == "PullRequestEvent":
             action = event["payload"]["action"]
-            pr_title = event["payload"]["pull_request"]["title"]
+            pr_title = event["payload"]["pull_request"].get("title", 'No title')
             title = f"PR {action}: \"{pr_title}\" on {repo_name_full}"
-            url = event["payload"]["pull_request"]["html_url"]
+            url = event["payload"]["pull_request"].get("html_url", "No html url")
 
         events_list.append(schemas.ActivityEvent(
             type=event["type"],

@@ -31,7 +31,7 @@ class GitHubClient:
             "Authorization": f"Bearer {token}",
             "X-GitHub-Api-Version": "2022-11-28",
         }
-
+        print(headers)
         # hishel wraps httpx to provide RFC 9111 compliant caching.
         # It automatically handles ETags and Cache-Control headers.
         self.client: CacheClient | None = CacheClient(headers=headers)
@@ -62,6 +62,8 @@ class GitHubClient:
 
         except httpx.HTTPStatusError as e:
             logger.error("HTTP error during paginated fetch for %s: %s", url, e)
+        if not items:
+            raise Exception("No repos, nothing to do")
         return items
 
     def get_public_repos(self) -> List[schemas.RepoInventoryItem]:
