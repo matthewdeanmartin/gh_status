@@ -5,12 +5,163 @@
   <title>{{ title }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: sans-serif; margin: 2em; background-color: #fdfdfd; color: #111; }
-    pre { padding: 1em; background-color: #f4f4f4; border: 1px solid #ddd; border-radius: 5px; white-space: pre-wrap; word-wrap: break-word; }
+    :root {
+      --paper: #f7f2e8;
+      --ink: #1f2320;
+      --muted: #5f665e;
+      --line: rgba(31, 35, 32, 0.14);
+      --accent: #1b5e55;
+      --accent-soft: rgba(27, 94, 85, 0.08);
+      --code-bg: rgba(255, 252, 247, 0.92);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(27, 94, 85, 0.12), transparent 30%),
+        linear-gradient(180deg, #fbf8f2 0%, var(--paper) 100%);
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    a { color: var(--accent); }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 18px 56px;
+    }
+
+    .masthead {
+      display: grid;
+      gap: 14px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .kicker {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 4rem);
+      line-height: 0.96;
+      letter-spacing: -0.04em;
+      max-width: 10ch;
+    }
+
+    .intro {
+      max-width: 760px;
+      font-size: 1.08rem;
+      line-height: 1.65;
+      color: var(--muted);
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    .meta strong {
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 8px;
+    }
+
+    .nav a {
+      text-decoration: none;
+      padding-bottom: 2px;
+      border-bottom: 1px solid transparent;
+    }
+
+    .nav a:hover {
+      border-color: currentColor;
+    }
+
+    .reader {
+      margin-top: 26px;
+      border-top: 2px solid var(--ink);
+      background: var(--code-bg);
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      box-shadow: 0 22px 60px rgba(26, 30, 28, 0.08);
+    }
+
+    .reader-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--accent-soft);
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+
+    pre {
+      margin: 0;
+      padding: 22px 20px 24px;
+      overflow-x: auto;
+      white-space: pre;
+      line-height: 1.58;
+      font-size: 0.95rem;
+      font-family: "Consolas", "SFMono-Regular", "Courier New", monospace;
+      color: #16322d;
+    }
+
+    code { font-family: inherit; }
+
+    @media (max-width: 700px) {
+      .reader-head {
+        flex-direction: column;
+      }
+
+      pre {
+        padding: 18px 14px 20px;
+        font-size: 0.88rem;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>{{ title }}</h1>
-  <pre><code>{{ content }}</code></pre>
+  <div class="page">
+    <header class="masthead">
+      <div class="kicker">Generated Feed</div>
+      <h1>{{ heading }}</h1>
+      <p class="intro">{{ description }}</p>
+      <div class="meta">
+        <div><strong>Source:</strong> {{ source_name }}</div>
+        <div><strong>Lines:</strong> {{ line_count }}</div>
+        <div><strong>Format:</strong> TOML rendered as HTML</div>
+      </div>
+      <nav class="nav" aria-label="Feed navigation">
+        <a href="index.html">Back to dashboard</a>
+        <a href="{{ source_name }}">Open raw TOML</a>
+      </nav>
+    </header>
+
+    <main class="reader">
+      <div class="reader-head">
+        <span>Reading view</span>
+        <span>Preserved verbatim for copy, search, and agent ingestion</span>
+      </div>
+      <pre><code>{{ content }}</code></pre>
+    </main>
+  </div>
 </body>
 </html>

@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import dotenv
@@ -23,6 +23,24 @@ logger = logging.getLogger(__name__)
 
 
 # --- Main Application Logic ---
+def _build_info(username: str) -> dict[str, object]:
+    commit_sha = os.environ.get("GITHUB_SHA", "")
+    repository = os.environ.get("GITHUB_REPOSITORY", f"{username}/{Path.cwd().name}")
+    server_url = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
+    run_id = os.environ.get("GITHUB_RUN_ID", "")
+    generated_utc = datetime.now(timezone.utc).isoformat()
+
+    return {
+        "generated_utc": generated_utc,
+        "repository": repository,
+        "commit_sha": commit_sha,
+        "commit_short": commit_sha[:7] if commit_sha else "",
+        "commit_url": f"{server_url}/{repository}/commit/{commit_sha}" if commit_sha else "",
+        "run_id": run_id,
+        "run_url": f"{server_url}/{repository}/actions/runs/{run_id}" if run_id else "",
+        "warnings": [],
+    }
+
 
 def main() -> int:
     """Main entrypoint for the gh-status CLI."""
@@ -105,6 +123,19 @@ def main() -> int:
                 activity_path = output_dir / f"latest-{days}d.toml"
                 writers.write_toml(activity_path, activity)
                 writers.write_html_wrapper(activity_path)
+                if days == 7:
+                    activity_7d = activity
+                else:
+                    activity_30d = activity
+
+            writers.write_dashboard(
+                output_dir,
+                inventory=inventory,
+                todos=todos,
+                activity_7d=activity_7d,
+                activity_30d=activity_30d,
+                build_info=_build_info(username),
+            )
         logger.info("✅ Successfully generated all feeds in '%s'.", output_dir)
         return 0
     except Exception:

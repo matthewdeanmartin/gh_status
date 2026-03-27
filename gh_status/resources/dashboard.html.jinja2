@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ username }} GitHub Status</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --bg: #f4efe6;
+      --panel: rgba(255, 252, 247, 0.88);
+      --ink: #1d1f1d;
+      --muted: #5f665d;
+      --accent: #146356;
+      --accent-2: #c86b3c;
+      --line: rgba(29, 31, 29, 0.12);
+      --shadow: 0 24px 70px rgba(23, 28, 24, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(20, 99, 86, 0.16), transparent 32%),
+        radial-gradient(circle at top right, rgba(200, 107, 60, 0.18), transparent 28%),
+        linear-gradient(180deg, #f9f5ef 0%, var(--bg) 100%);
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    a { color: var(--accent); }
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 18px 64px;
+    }
+
+    .hero,
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .hero {
+      padding: 28px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -40px;
+      top: -40px;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(20, 99, 86, 0.18), transparent 70%);
+      pointer-events: none;
+    }
+
+    h1, h2, h3 { margin: 0; }
+    h1 {
+      font-size: clamp(2.2rem, 6vw, 4.5rem);
+      line-height: 0.94;
+      letter-spacing: -0.04em;
+      max-width: 9ch;
+    }
+
+    .lede {
+      margin-top: 14px;
+      max-width: 760px;
+      font-size: 1.1rem;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .meta-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .meta-pill,
+    .stat,
+    .repo-card,
+    .feed-link,
+    .warning,
+    .health-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .meta-pill {
+      padding: 14px 16px;
+    }
+
+    .eyebrow,
+    .label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    .value {
+      font-size: 1.1rem;
+      margin-top: 6px;
+      font-weight: 700;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .panel { padding: 22px; }
+    .span-12 { grid-column: span 12; }
+    .span-7 { grid-column: span 7; }
+    .span-5 { grid-column: span 5; }
+    .span-4 { grid-column: span 4; }
+    .span-6 { grid-column: span 6; }
+
+    .stats-grid,
+    .repo-grid,
+    .feed-grid,
+    .health-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .stats-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+    .repo-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .feed-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .health-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+    .stat,
+    .feed-link,
+    .health-card,
+    .warning {
+      padding: 16px;
+    }
+
+    .stat strong,
+    .health-card strong {
+      display: block;
+      font-size: 2rem;
+      line-height: 1;
+      margin-top: 10px;
+    }
+
+    .detail {
+      margin-top: 10px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .chart {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 120px 1fr 48px;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.95rem;
+    }
+
+    .bar {
+      height: 14px;
+      border-radius: 999px;
+      background: rgba(20, 99, 86, 0.12);
+      overflow: hidden;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    }
+
+    .repo-card { padding: 18px; }
+    .repo-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .repo-name {
+      font-size: 1.15rem;
+      line-height: 1.25;
+    }
+
+    .repo-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .chip {
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(20, 99, 86, 0.08);
+      color: var(--accent);
+      font-size: 0.85rem;
+    }
+
+    ul {
+      margin: 14px 0 0;
+      padding-left: 18px;
+      line-height: 1.55;
+    }
+
+    .section-copy {
+      margin-top: 8px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .warning-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .warning {
+      border-left: 5px solid var(--accent-2);
+    }
+
+    .feed-link {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .feed-link:hover,
+    .repo-card:hover {
+      transform: translateY(-1px);
+      transition: transform 160ms ease;
+    }
+
+    @media (max-width: 900px) {
+      .span-7, .span-5, .span-4, .span-6 { grid-column: span 12; }
+      .bar-row { grid-template-columns: 100px 1fr 42px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="eyebrow">GitHub Status Dashboard</div>
+      <h1>{{ username }} public activity</h1>
+      <p class="lede">
+        A static snapshot of repository inventory, TODOs, recent activity, and build health.
+        This page is generated for GitHub Pages so humans get a clear dashboard while agents still get raw TOML feeds.
+      </p>
+      <div class="meta-strip">
+        <div class="meta-pill">
+          <div class="label">Generated</div>
+          <div class="value">{{ generated_utc }}</div>
+        </div>
+        <div class="meta-pill">
+          <div class="label">Activity streak</div>
+          <div class="value">{{ streak_days }} day{% if streak_days != 1 %}s{% endif %}</div>
+        </div>
+        <div class="meta-pill">
+          <div class="label">Busiest day</div>
+          <div class="value">{{ busiest_day or "No recent activity" }}</div>
+        </div>
+        <div class="meta-pill">
+          <div class="label">Commit</div>
+          <div class="value">{{ build_info.commit_short or "unknown" }}</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel span-12">
+        <h2>At a glance</h2>
+        <p class="section-copy">Quick summary cards for repository scale, recent momentum, and TODO volume.</p>
+        <div class="stats-grid">
+          {% for stat in stats %}
+          <div class="stat">
+            <div class="label">{{ stat.label }}</div>
+            <strong>{{ stat.value }}</strong>
+            <div class="detail">{{ stat.detail }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="panel span-7">
+        <h2>Activity mix</h2>
+        <p class="section-copy">Simple 30-day chart showing where public activity clustered.</p>
+        <div class="chart">
+          {% for item in activity_chart %}
+          <div class="bar-row">
+            <div>{{ item.label }}</div>
+            <div class="bar"><span style="width: {{ item.width_pct }}%"></span></div>
+            <div>{{ item.value }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="panel span-5">
+        <h2>Top repos</h2>
+        <p class="section-copy">Most active repositories across the last 30 days.</p>
+        <ul>
+          {% for repo in top_repos_30d %}
+          <li>{{ repo }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="panel span-12">
+        <h2>Hot repos</h2>
+        <p class="section-copy">The freshest repositories get richer cards with TODO counts, summary text, and latest changed files.</p>
+        <div class="repo-grid">
+          {% for repo in hot_repos %}
+          <article class="repo-card">
+            <div class="repo-top">
+              <h3 class="repo-name"><a href="{{ repo.url }}">{{ repo.full }}</a></h3>
+              <span class="chip">{{ repo.language }}</span>
+            </div>
+            <p class="detail">{{ repo.description }}</p>
+            <div class="repo-meta">
+              <span class="chip">{{ repo.stars }} stars</span>
+              <span class="chip">{{ repo.forks }} forks</span>
+              <span class="chip">{{ repo.open_issues }} open issues</span>
+              <span class="chip">{{ repo.todo_count }} TODOs</span>
+            </div>
+            {% if repo.synopsis %}
+            <ul>
+              {% for line in repo.synopsis %}
+              <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+            {% if repo.recent_files %}
+            <div class="label" style="margin-top: 16px;">Recent files</div>
+            <ul>
+              {% for path in repo.recent_files %}
+              <li><code>{{ path }}</code></li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </article>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="panel span-6">
+        <h2>Feed files</h2>
+        <p class="section-copy">Raw TOML for machines, wrapped HTML for quick inspection.</p>
+        <div class="feed-grid">
+          {% for link in links %}
+          <a class="feed-link" href="{{ link.html }}">
+            <div class="label">{{ link.label }}</div>
+            <div class="value">{{ link.html }}</div>
+            <div class="detail">Raw: <code>{{ link.toml }}</code></div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="panel span-6">
+        <h2>Build health</h2>
+        <p class="section-copy">Operational metadata so the page explains when and how it was published.</p>
+        <div class="health-grid">
+          <div class="health-card">
+            <div class="label">Last successful publish</div>
+            <strong>{{ build_info.generated_utc }}</strong>
+          </div>
+          <div class="health-card">
+            <div class="label">Repository</div>
+            <strong>{{ build_info.repository or "unknown" }}</strong>
+          </div>
+          <div class="health-card">
+            <div class="label">Commit SHA</div>
+            <strong>{{ build_info.commit_short or "unknown" }}</strong>
+            {% if build_info.commit_url %}
+            <div class="detail"><a href="{{ build_info.commit_url }}">View commit</a></div>
+            {% endif %}
+          </div>
+          <div class="health-card">
+            <div class="label">Run</div>
+            <strong>{{ build_info.run_id or "local" }}</strong>
+            {% if build_info.run_url %}
+            <div class="detail"><a href="{{ build_info.run_url }}">View workflow run</a></div>
+            {% endif %}
+          </div>
+        </div>
+        {% if warnings %}
+        <div class="warning-list">
+          {% for warning in warnings %}
+          <div class="warning">{{ warning }}</div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+</body>
+</html>

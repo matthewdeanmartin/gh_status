@@ -36,6 +36,20 @@ def _parse_todos_from_content(content: str) -> List[str]:
     return todos
 
 
+def _is_meaningful_event(event: dict) -> bool:
+    """
+    Filters out GitHub events that add little or no value to the public activity feed.
+    """
+    if event.get("type") == "PushEvent":
+        payload = event.get("payload", {})
+        commit_count = payload.get("size", 0)
+        commits = payload.get("commits") or []
+        if commit_count <= 0 and not commits:
+            return False
+
+    return True
+
+
 # --- Builder Functions ---
 
 def build_inventory(client: github_client.GitHubClient, username: str) -> schemas.Inventory:
@@ -125,6 +139,7 @@ def build_activity(
     window_events = [
         e for e in all_events
         if datetime.fromisoformat(e["created_at"].replace("Z", "+00:00")) >= window_start_utc
+        and _is_meaningful_event(e)
     ]
 
     # --- Calculate Summary and Insights ---
