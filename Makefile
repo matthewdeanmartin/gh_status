@@ -88,8 +88,13 @@ show-config:
 	@echo "GITHUB_USERNAME=$${GITHUB_USERNAME:-<unset>}"
 	@echo "GITHUB_TOKEN=$${GITHUB_TOKEN:+<set>}$${GITHUB_TOKEN:-<unset>}"
 
+.PHONY: build-web
+build-web:
+	@npm install
+	@npm run build:web
+
 .PHONY: status
-status: check-env
+status: check-env build-web
 	@mkdir -p "$(OUTPUT_DIR)"
 	@# The CLI loads .env itself, but we also pass TZ_NAME explicitly for clarity.
 	@TZ_NAME="$(TZ_NAME)" $(PY) -m $(MODULE) \

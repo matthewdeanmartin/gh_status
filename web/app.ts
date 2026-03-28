@@ -113,10 +113,8 @@ interface SlideDefinition {
   render: () => string;
 }
 
-declare global {
-  interface Window {
-    GH_STATUS_BOOTSTRAP?: BootstrapData;
-  }
+interface Window {
+  GH_STATUS_BOOTSTRAP?: BootstrapData;
 }
 
 ((): void => {
@@ -171,7 +169,7 @@ declare global {
       render();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
-      slideFrame.innerHTML = `
+      slideFrame!.innerHTML = `
         <div class="error">
           <div>
             <div class="eyebrow">Deck unavailable</div>
@@ -529,7 +527,7 @@ declare global {
             The nightly run keeps publishing TOML for agent ingestion and JSON for the slideshow.
           </p>
           <div class="feed-grid">
-            ${links.map((link) => `
+            ${links.map((link: { label: string; json: string; toml: string; html: string }) => `
               <section class="feed-card">
                 <div class="card-label">${escapeHtml(link.label)}</div>
                 <div class="detail"><a href="${escapeAttribute(link.json)}">JSON</a> for the browser deck.</div>
@@ -551,27 +549,27 @@ declare global {
 
     state.index = clamp(state.index, 0, slides.length - 1);
     const currentSlide = slides[state.index];
-    slideFrame.innerHTML = currentSlide.render();
+    slideFrame!.innerHTML = currentSlide.render();
 
-    deckLabel.textContent = state.mode === "7d" ? "Weekly deck" : "Monthly deck";
-    deckMeta.innerHTML = `
+    deckLabel!.textContent = state.mode === "7d" ? "Weekly deck" : "Monthly deck";
+    deckMeta!.innerHTML = `
       <span class="meta-chip">${slides.length} slides</span>
       <span class="meta-chip">${state.mode === "7d" ? "Designed as a short walkthrough" : "Designed as a longer retrospective"}</span>
       <span class="meta-chip">Generated ${escapeHtml(formatDateTime(bootstrap.generated_utc ?? bootstrap.build_info?.generated_utc ?? ""))}</span>
     `;
 
-    sidebarTitle.textContent = state.mode === "7d" ? "Weekly outline" : "Monthly outline";
-    sidebarCopy.textContent = currentSlide.deckCopy;
-    counter.textContent = `${state.index + 1} / ${slides.length}`;
-    progressBar.style.width = `${((state.index + 1) / slides.length) * 100}%`;
+    sidebarTitle!.textContent = state.mode === "7d" ? "Weekly outline" : "Monthly outline";
+    sidebarCopy!.textContent = currentSlide.deckCopy;
+    counter!.textContent = `${state.index + 1} / ${slides.length}`;
+    progressBar!.style.width = `${((state.index + 1) / slides.length) * 100}%`;
 
-    slideList.innerHTML = slides.map((slide, index) => `
+    slideList!.innerHTML = slides.map((slide, index) => `
       <button type="button" class="slide-jump ${index === state.index ? "is-active" : ""}" data-index="${index}">
         ${index + 1}. ${escapeHtml(slide.shortTitle)}
       </button>
     `).join("");
 
-    for (const button of Array.from(slideList.querySelectorAll<HTMLButtonElement>("[data-index]"))) {
+    for (const button of Array.from(slideList!.querySelectorAll<HTMLButtonElement>("[data-index]"))) {
       button.addEventListener("click", () => {
         const rawIndex = button.dataset.index;
         goTo(rawIndex ? Number.parseInt(rawIndex, 10) : 0);
