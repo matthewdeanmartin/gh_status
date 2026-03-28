@@ -9,23 +9,31 @@ from pydantic import BaseModel, Field
 
 # --- Inventory Schemas ---
 
+
 class RepoInventoryItem(BaseModel):
     # Core Fields
     full: str
     desc: Optional[str] = None
     topics: List[str] = Field(default_factory=list)
     lang: Optional[str] = None
-    stars: int
-    forks: int
-    open_issues: int
+    stars: int = 0
+    forks: int = 0
+    open_issues: int = 0
     pushed_utc: datetime
     homepage: Optional[str] = None
     default_branch: str
 
     # Detailed Fields for "Hot" Repos
-    readme: Optional[str] = Field(None, description="The full content of the README file.")
-    changelog: Optional[str] = Field(None, description="The full content of the changelog file.")
-    recent_files: Optional[List[str]] = Field(None, description="A list of files changed in recent commits.")
+    readme: Optional[str] = Field(
+        None, description="The full content of the README file."
+    )
+    changelog: Optional[str] = Field(
+        None, description="The full content of the changelog file."
+    )
+    recent_files: Optional[List[str]] = Field(
+        None, description="A list of files changed in recent commits."
+    )
+
 
 class Inventory(BaseModel):
     schema_version: str = "1"
@@ -36,10 +44,12 @@ class Inventory(BaseModel):
 
 # --- TODOs Schemas ---
 
+
 class RepoTodosItem(BaseModel):
     full: str
     todos: Optional[List[str]] = None
     synopsis: Optional[List[str]] = None
+
 
 class Todos(BaseModel):
     schema_version: str = "1"
@@ -49,6 +59,7 @@ class Todos(BaseModel):
 
 
 # --- Activity Schemas ---
+
 
 class ActivitySummary(BaseModel):
     events: int = 0
@@ -62,11 +73,13 @@ class ActivitySummary(BaseModel):
     creates: int = 0
     deletes: int = 0
 
+
 class ActivityInsights(BaseModel):
     streak_days: int
     busiest_local_day: Optional[str] = None
     top_repos: List[str]
     top_event_types: List[str]
+
 
 class ActivityEvent(BaseModel):
     type: str
@@ -78,6 +91,7 @@ class ActivityEvent(BaseModel):
     commits: Optional[List[str]] = None
     event_id: str
 
+
 class Activity(BaseModel):
     schema_version: str = "1"
     username: str
@@ -88,13 +102,16 @@ class Activity(BaseModel):
     insights: ActivityInsights
     event: List[ActivityEvent] = Field(default_factory=list)
 
+
 # --- Hints Schema (Optional) ---
 class HintsSuggest(BaseModel):
     queries: List[str] = Field(default_factory=list)
 
+
 class HintsContext(BaseModel):
     recent_keywords: List[str] = Field(default_factory=list)
     focus_repos: List[str] = Field(default_factory=list)
+
 
 class Hints(BaseModel):
     schema_version: str = "1"

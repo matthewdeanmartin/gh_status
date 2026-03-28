@@ -11,26 +11,36 @@ on:
   # Allow running this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Set permissions for the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
-  pages: write
-  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build-and-deploy:
     name: Build and Deploy Feeds
     runs-on: ubuntu-latest
+    # Set permissions for the GITHUB_TOKEN to allow deployment to GitHub Pages
+    permissions:
+      contents: read     # To checkout the repository
+      pages: write        # To deploy to Pages
+      id-token: write     # To verify the deployment is coming from the correct source
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name:  checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Set up Python 3.x
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@0b93645e9fea7318ecaed2be359559fd225c90a2 # v5.3.0
         with:
           python-version: '3.13'
 
@@ -60,7 +70,7 @@ jobs:
           TZ_NAME: "America/New_York"
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@398f52985d8b053235c79c4653619d337392c57f # v4.1.0
         with:
           node-version: '20'
 
@@ -71,14 +81,14 @@ jobs:
         run: npm run build:web
 
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
 
       - name: Upload pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dee4621055ee # v3.0.0
         with:
           # Upload the 'docs' directory
           path: './docs'
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6d577ef5e26a4709c06e9e56f7718d327d9735e # v4.0.5

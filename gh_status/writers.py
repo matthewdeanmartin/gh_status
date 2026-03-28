@@ -10,13 +10,15 @@ import tomlkit
 from jinja2 import Environment, PackageLoader, select_autoescape
 from pydantic import BaseModel
 
+from . import schemas
+
 logger = logging.getLogger(__name__)
 
 # Set up the Jinja2 environment to load templates from our package's 'resources' folder.
 # This works for both local development and installed packages.
 jinja_env = Environment(
     loader=PackageLoader("gh_status", "resources"),
-    autoescape=select_autoescape(["html", "xml"])
+    autoescape=select_autoescape(["html", "xml"]),
 )
 
 
@@ -59,7 +61,7 @@ def write_toml(path: Path, data: BaseModel) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        data_dict = data.model_dump(mode='json',exclude_none=True)
+        data_dict = data.model_dump(mode="json", exclude_none=True)
         toml_content = tomlkit.dumps(data_dict)
 
         path.write_text(toml_content, encoding="utf-8")
@@ -78,8 +80,14 @@ def write_json(path: Path, data: BaseModel | dict[str, Any]) -> None:
     """
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        payload = data.model_dump(mode="json", exclude_none=True) if isinstance(data, BaseModel) else data
-        path.write_text(json.dumps(payload, indent=2, sort_keys=False), encoding="utf-8")
+        payload = (
+            data.model_dump(mode="json", exclude_none=True)
+            if isinstance(data, BaseModel)
+            else data
+        )
+        path.write_text(
+            json.dumps(payload, indent=2, sort_keys=False), encoding="utf-8"
+        )
         logger.info("Successfully wrote JSON file to %s", path)
     except Exception as e:
         logger.error("Failed to write JSON file to %s: %s", path, e)
@@ -120,10 +128,10 @@ def write_html_wrapper(toml_path: Path) -> None:
 def write_dashboard(
     output_dir: Path,
     *,
-    inventory: BaseModel,
-    todos: BaseModel,
-    activity_7d: BaseModel,
-    activity_30d: BaseModel,
+    inventory: schemas.Inventory,
+    todos: schemas.Todos,
+    activity_7d: schemas.Activity,
+    activity_30d: schemas.Activity,
     build_info: dict[str, Any],
 ) -> None:
     """
@@ -193,7 +201,9 @@ def write_dashboard(
         hot_repo_cards = []
         warnings = list(build_info.get("warnings", []))
         for repo in hot_repos:
-            todo_entry = next((item for item in todo_repos if item.full == repo.full), None)
+            todo_entry = next(
+                (item for item in todo_repos if item.full == repo.full), None
+            )
             todo_count = len(todo_entry.todos or []) if todo_entry else 0
             synopsis = (todo_entry.synopsis or [])[:2] if todo_entry else []
             recent_files = (repo.recent_files or [])[:5]
@@ -201,7 +211,9 @@ def write_dashboard(
             if not repo.readme:
                 warnings.append(f"Hot repo {repo.full} is missing README.md content.")
             if not repo.recent_files:
-                warnings.append(f"Hot repo {repo.full} is missing recent file change data.")
+                warnings.append(
+                    f"Hot repo {repo.full} is missing recent file change data."
+                )
 
             hot_repo_cards.append(
                 {
@@ -276,5 +288,7 @@ def write_dashboard(
         dashboard_path.write_text(html_content, encoding="utf-8")
         logger.info("Successfully wrote dashboard to %s", dashboard_path)
     except Exception as e:
-        logger.error("Failed to write dashboard to %s: %s", output_dir / "index.html", e)
+        logger.error(
+            "Failed to write dashboard to %s: %s", output_dir / "index.html", e
+        )
         raise

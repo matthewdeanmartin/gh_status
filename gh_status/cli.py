@@ -11,6 +11,7 @@ import dotenv
 import pytz
 
 from gh_status import builder, github_client, writers
+
 dotenv.load_dotenv()
 
 # --- Logging Setup ---
@@ -35,7 +36,9 @@ def _build_info(username: str) -> dict[str, object]:
         "repository": repository,
         "commit_sha": commit_sha,
         "commit_short": commit_sha[:7] if commit_sha else "",
-        "commit_url": f"{server_url}/{repository}/commit/{commit_sha}" if commit_sha else "",
+        "commit_url": f"{server_url}/{repository}/commit/{commit_sha}"
+        if commit_sha
+        else "",
         "run_id": run_id,
         "run_url": f"{server_url}/{repository}/actions/runs/{run_id}" if run_id else "",
         "warnings": [],
@@ -75,14 +78,18 @@ def main() -> int:
 
     if not username or not token:
         logger.error(
-            "GitHub username and token are required. Set GITHUB_USERNAME and GITHUB_TOKEN environment variables or use flags.")
+            "GitHub username and token are required. Set GITHUB_USERNAME and GITHUB_TOKEN environment variables or use flags."
+        )
         return 1
 
     # --- Time Guard ---
     try:
         local_tz = pytz.timezone(tz_name)
     except pytz.UnknownTimeZoneError:
-        logger.error("Unknown timezone: %s. Set the TZ_NAME environment variable correctly.", tz_name)
+        logger.error(
+            "Unknown timezone: %s. Set the TZ_NAME environment variable correctly.",
+            tz_name,
+        )
         return 1
 
     now_local = datetime.now(local_tz)
@@ -121,7 +128,9 @@ def main() -> int:
             # 3. Build and write Activity Feeds
             for days in [7, 30]:
                 logger.info("Building %d-day activity feed...", days)
-                activity = builder.build_activity(client, username, tz_name, window_days=days)
+                activity = builder.build_activity(
+                    client, username, tz_name, window_days=days
+                )
                 activity_path = output_dir / f"latest-{days}d.toml"
                 writers.write_toml(activity_path, activity)
                 writers.write_json(output_dir / f"latest-{days}d.json", activity)
@@ -146,5 +155,5 @@ def main() -> int:
         return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

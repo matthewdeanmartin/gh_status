@@ -38,7 +38,12 @@ class GitHubClient:
     def __enter__(self) -> GitHubClient:
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[Any],
+    ) -> None:
         self.close()
 
     def _get_paginated(self, url: str) -> List[dict[str, Any]]:
@@ -102,7 +107,9 @@ class GitHubClient:
         url = f"{API_URL}/users/{self.username}/events/public?per_page=100"
         return self._get_paginated(url)
 
-    def get_file_content(self, repo_full_name: str, file_path: str, branch: str) -> Optional[str]:
+    def get_file_content(
+        self, repo_full_name: str, file_path: str, branch: str
+    ) -> Optional[str]:
         """
         Fetches the content of a specific file from a repository's specific branch.
         Returns None if the file is not found.
@@ -119,12 +126,23 @@ class GitHubClient:
             response = self.client.get(url, headers=headers, params=params)
 
             if response.status_code == 404:
-                logger.debug("File not found on branch '%s': %s in %s", branch, file_path, repo_full_name)
+                logger.debug(
+                    "File not found on branch '%s': %s in %s",
+                    branch,
+                    file_path,
+                    repo_full_name,
+                )
                 return None
             response.raise_for_status()
             return response.text
         except httpx.HTTPStatusError as e:
-            logger.warning("Could not fetch file %s from %s (branch: %s): %s", file_path, repo_full_name, branch, e)
+            logger.warning(
+                "Could not fetch file %s from %s (branch: %s): %s",
+                file_path,
+                repo_full_name,
+                branch,
+                e,
+            )
             return None
 
     def get_recent_file_changes(self, repo_full_name: str) -> Optional[List[str]]:
@@ -144,7 +162,9 @@ class GitHubClient:
             commit_sha = latest_commit["sha"]
 
             # Get the full commit tree recursively
-            tree_url = f"{API_URL}/repos/{repo_full_name}/git/trees/{commit_sha}?recursive=1"
+            tree_url = (
+                f"{API_URL}/repos/{repo_full_name}/git/trees/{commit_sha}?recursive=1"
+            )
             tree_response = self.client.get(tree_url)
             tree_response.raise_for_status()
 
@@ -153,13 +173,19 @@ class GitHubClient:
                 logger.warning("Commit tree for %s was truncated.", repo_full_name)
 
             # Return a list of file paths (type: "blob")
-            return [item["path"] for item in tree_data.get("tree", []) if item.get("type") == "blob"]
+            return [
+                item["path"]
+                for item in tree_data.get("tree", [])
+                if item.get("type") == "blob"
+            ]
 
         except (httpx.HTTPStatusError, IndexError, KeyError) as e:
-            logger.error("Could not fetch recent file changes for %s: %s", repo_full_name, e)
+            logger.error(
+                "Could not fetch recent file changes for %s: %s", repo_full_name, e
+            )
             return None
 
-    def close(self):
+    def close(self) -> None:
         """Closes the underlying httpx client if it exists."""
         if self.client:
             self.client.close()

@@ -1,0 +1,53 @@
+name: Build & Quality
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2be359559fd225c90a2 # v5.3.0
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Lint Python
+        run: make lint-python
+
+      - name: Run tests
+        run: make test
+
+      - name: Lint GitHub Actions
+        run: make lint-actions
+
+      - name: Set up Node.js
+        uses: actions/setup-node@398f52985d8b053235c79c4653619d337392c57f # v4.1.0
+        with:
+          node-version: '20'
+
+      - name: Build web assets
+        run: make build-web

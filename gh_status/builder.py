@@ -5,7 +5,7 @@ import logging
 import re
 from collections import Counter
 from datetime import datetime, timedelta, timezone
-from typing import List
+from typing import Any, List
 
 import pytz
 
@@ -18,6 +18,7 @@ HOT_REPO_COUNT = 3
 
 
 # --- Helper Functions ---
+
 
 def _normalize_todo_line(line: str) -> str:
     """Strips markdown list markers, extra whitespace, and truncates the line."""
@@ -36,7 +37,7 @@ def _parse_todos_from_content(content: str) -> List[str]:
     return todos
 
 
-def _is_meaningful_event(event: dict) -> bool:
+def _is_meaningful_event(event: dict[str, Any]) -> bool:
     """
     Filters out GitHub events that add little or no value to the public activity feed.
     """
@@ -52,7 +53,10 @@ def _is_meaningful_event(event: dict) -> bool:
 
 # --- Builder Functions ---
 
-def build_inventory(client: github_client.GitHubClient, username: str) -> schemas.Inventory:
+
+def build_inventory(
+    client: github_client.GitHubClient, username: str
+) -> schemas.Inventory:
     """
     Builds the repository inventory, including detailed content for "hot" repos.
     """
@@ -66,27 +70,32 @@ def build_inventory(client: github_client.GitHubClient, username: str) -> schema
         if repo.full in hot_repo_names:
             logger.info("Fetching details for hot repo: %s", repo.full)
             # Fetch detailed content using the repo's specific default_branch
-            repo.readme = client.get_file_content(repo.full, "README.md", branch=repo.default_branch)
-            repo.changelog = client.get_file_content(repo.full, "CHANGELOG.md", branch=repo.default_branch)
+            repo.readme = client.get_file_content(
+                repo.full, "README.md", branch=repo.default_branch
+            )
+            repo.changelog = client.get_file_content(
+                repo.full, "CHANGELOG.md", branch=repo.default_branch
+            )
             repo.recent_files = client.get_recent_file_changes(repo.full)
 
     return schemas.Inventory(
-        username=username,
-        generated_utc=datetime.utcnow(),
-        repo=repos
+        username=username, generated_utc=datetime.utcnow(), repo=repos
     )
 
 
-def build_todos(client: github_client.GitHubClient, inventory: schemas.Inventory) -> schemas.Todos:
+def build_todos(
+    client: github_client.GitHubClient, inventory: schemas.Inventory
+) -> schemas.Todos:
     """
     Builds the aggregated TODO list by fetching content from each repository.
     """
     repo_todos_list = []
 
-    todo_filenames = ["docs/TODO.md",
-                      # "TODO.md", "todo.md",
-                      # "docs/ROADMAP.md"
-                      ]
+    todo_filenames = [
+        "docs/TODO.md",
+        # "TODO.md", "todo.md",
+        # "docs/ROADMAP.md"
+    ]
 
     for repo in inventory.repo:
         repo_todos = schemas.RepoTodosItem(full=repo.full)
@@ -94,7 +103,9 @@ def build_todos(client: github_client.GitHubClient, inventory: schemas.Inventory
         # 1. Look for a TODO file on the correct branch
         todo_content = None
         for filename in todo_filenames:
-            content = client.get_file_content(repo.full, filename, branch=repo.default_branch)
+            content = client.get_file_content(
+                repo.full, filename, branch=repo.default_branch
+            )
             if content:
                 logger.info("Found TODOs for %s in %s", repo.full, filename)
                 todo_content = content
@@ -104,10 +115,13 @@ def build_todos(client: github_client.GitHubClient, inventory: schemas.Inventory
             repo_todos.todos = _parse_todos_from_content(todo_content)
 
         # 2. Get synopsis from README on the correct branch
-        readme_content = repo.readme or client.get_file_content(repo.full, "README.md", branch=repo.default_branch)
+        readme_content = repo.readme or client.get_file_content(
+            repo.full, "README.md", branch=repo.default_branch
+        )
         if readme_content:
             synopsis_lines = [
-                line.strip() for line in readme_content.strip().splitlines()
+                line.strip()
+                for line in readme_content.strip().splitlines()
                 if line.strip() and not line.strip().startswith("#")
             ][:5]
             repo_todos.synopsis = synopsis_lines
@@ -117,15 +131,12 @@ def build_todos(client: github_client.GitHubClient, inventory: schemas.Inventory
     return schemas.Todos(
         username=inventory.username,
         generated_utc=datetime.utcnow(),
-        repo=repo_todos_list
+        repo=repo_todos_list,
     )
 
 
 def build_activity(
-        client: github_client.GitHubClient,
-        username: str,
-        tz_name: str,
-        window_days: int
+    client: github_client.GitHubClient, username: str, tz_name: str, window_days: int
 ) -> schemas.Activity:
     """Builds the activity feed for a given time window (e.g., 7 or 30 days)."""
     # CORRECT WAY to get an offset-aware UTC timestamp
@@ -137,8 +148,10 @@ def build_activity(
 
     # Filter events within the window (this comparison will now work correctly)
     window_events = [
-        e for e in all_events
-        if datetime.fromisoformat(e["created_at"].replace("Z", "+00:00")) >= window_start_utc
+        e
+        for e in all_events
+        if datetime.fromisoformat(e["created_at"].replace("Z", "+00:00"))
+        >= window_start_utc
         and _is_meaningful_event(e)
     ]
 
@@ -147,13 +160,17 @@ def build_activity(
     type_counter = Counter(e["type"] for e in window_events)
 
     # Busiest day and streak
-    events_by_local_day = Counter()
+    events_by_local_day: Counter[str] = Counter()
     for event in window_events:
-        event_time_utc = datetime.fromisoformat(event["created_at"].replace("Z", "+00:00"))
+        event_time_utc = datetime.fromisoformat(
+            event["created_at"].replace("Z", "+00:00")
+        )
         local_day = event_time_utc.astimezone(local_tz).strftime("%Y-%m-%d")
         events_by_local_day[local_day] += 1
 
-    busiest_day = events_by_local_day.most_common(1)[0][0] if events_by_local_day else None
+    busiest_day = (
+        events_by_local_day.most_common(1)[0][0] if events_by_local_day else None
+    )
 
     # Calculate streak
     active_days = sorted(events_by_local_day.keys())
@@ -176,7 +193,8 @@ def build_activity(
         pushes=type_counter.get("PushEvent", 0),
         pull_requests=type_counter.get("PullRequestEvent", 0),
         issues=type_counter.get("IssuesEvent", 0),
-        comments=type_counter.get("IssueCommentEvent", 0) + type_counter.get("CommitCommentEvent", 0),
+        comments=type_counter.get("IssueCommentEvent", 0)
+        + type_counter.get("CommitCommentEvent", 0),
         releases=type_counter.get("ReleaseEvent", 0),
         stars=type_counter.get("WatchEvent", 0),
         creates=type_counter.get("CreateEvent", 0),
@@ -187,13 +205,15 @@ def build_activity(
         streak_days=streak,
         busiest_local_day=busiest_day,
         top_repos=[f"{name}:{count}" for name, count in repo_counter.most_common(5)],
-        top_event_types=[f"{name}:{count}" for name, count in type_counter.most_common(5)],
+        top_event_types=[
+            f"{name}:{count}" for name, count in type_counter.most_common(5)
+        ],
     )
 
     events_list = []
     for event in window_events:
         repo_name_full = event["repo"]["name"]
-        repo_owner, repo_name_short = repo_name_full.split('/')
+        repo_owner, repo_name_short = repo_name_full.split("/")
 
         title = f"{event['type']} on {repo_name_full}"
         commits = None
@@ -211,20 +231,22 @@ def build_activity(
                 url = f"https://github.com/{repo_name_full}/tree/{event['payload']['ref']}"
         elif event["type"] == "PullRequestEvent":
             action = event["payload"]["action"]
-            pr_title = event["payload"]["pull_request"].get("title", 'No title')
-            title = f"PR {action}: \"{pr_title}\" on {repo_name_full}"
+            pr_title = event["payload"]["pull_request"].get("title", "No title")
+            title = f'PR {action}: "{pr_title}" on {repo_name_full}'
             url = event["payload"]["pull_request"].get("html_url", "No html url")
 
-        events_list.append(schemas.ActivityEvent(
-            type=event["type"],
-            repo_owner=repo_owner,
-            repo_name=repo_name_short,
-            at_utc=event["created_at"],
-            url=url,
-            title=title,
-            commits=commits,
-            event_id=event["id"]
-        ))
+        events_list.append(
+            schemas.ActivityEvent(
+                type=event["type"],
+                repo_owner=repo_owner,
+                repo_name=repo_name_short,
+                at_utc=event["created_at"],
+                url=url,
+                title=title,
+                commits=commits,
+                event_id=event["id"],
+            )
+        )
 
     return schemas.Activity(
         username=username,
@@ -233,5 +255,5 @@ def build_activity(
         window_days=window_days,
         summary=summary,
         insights=insights,
-        event=events_list
+        event=events_list,
     )

@@ -1,0 +1,10 @@
+# zizmor configuration file
+# See https://docs.zizmor.sh/configuration/
+
+rules:
+  impostor-commit:
+    disable: true
+  ref-version-mismatch:
+    disable: true
+  stale-action-refs:
+    disable: true

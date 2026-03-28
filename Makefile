@@ -120,3 +120,25 @@ clean:
 nuke:
 	@rm -rf "$(OUTPUT_DIR)"
 	@echo "Removed directory $(OUTPUT_DIR)/"
+
+.PHONY: lint-python
+lint-python:
+	@uv run ruff check .
+	@uv run ruff format --check .
+	@uv run mypy .
+
+.PHONY: test
+test:
+	@uv run pytest
+
+.PHONY: lint-actions
+lint-actions:
+	@uv run zizmor .github/workflows/*.yml --config .zizmor.yml --min-severity informational --persona pedantic
+	@uv run check-jsonschema --schemafile https://json.schemastore.org/github-workflow.json .github/workflows/*.yml
+
+.PHONY: fix-actions
+fix-actions:
+	@uv run gha-update .github/workflows/*.yml
+
+check: lint-actions test lint-python
+	@echo "Checking..."
