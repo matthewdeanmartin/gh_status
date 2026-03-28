@@ -9,7 +9,7 @@ dependencies = [
     "pydantic>=2.7.0",
     "tomlkit",
     "pytz",
-    "hishel",  # Caching for httpx, replaces requests-cache
+    "hishel>=1.0.0",  # Caching for httpx, replaces requests-cache
     "jinja2",
     "python-dotenv>=1.1.1"
 ]

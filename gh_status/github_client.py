@@ -5,7 +5,7 @@ import logging
 from typing import Any, List, Optional
 
 import httpx
-from hishel import CacheClient
+from hishel.httpx import SyncCacheClient as CacheClient
 
 from . import schemas
 
