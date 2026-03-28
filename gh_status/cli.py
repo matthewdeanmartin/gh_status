@@ -107,6 +107,7 @@ def main() -> int:
             inventory = builder.build_inventory(client, username)
             inventory_path = output_dir / "inventory.toml"
             writers.write_toml(inventory_path, inventory)
+            writers.write_json(output_dir / "inventory.json", inventory)
             writers.write_html_wrapper(inventory_path)
 
             # 2. Build and write TODOs
@@ -114,6 +115,7 @@ def main() -> int:
             todos = builder.build_todos(client, inventory)
             todos_path = output_dir / "todos.toml"
             writers.write_toml(todos_path, todos)
+            writers.write_json(output_dir / "todos.json", todos)
             writers.write_html_wrapper(todos_path)
 
             # 3. Build and write Activity Feeds
@@ -122,6 +124,7 @@ def main() -> int:
                 activity = builder.build_activity(client, username, tz_name, window_days=days)
                 activity_path = output_dir / f"latest-{days}d.toml"
                 writers.write_toml(activity_path, activity)
+                writers.write_json(output_dir / f"latest-{days}d.json", activity)
                 writers.write_html_wrapper(activity_path)
                 if days == 7:
                     activity_7d = activity

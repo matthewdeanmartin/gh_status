@@ -2,7 +2,7 @@
 
 Generate **LLM-optimized, machine-readable public GitHub activity feeds** (inventory, TODOs, and recent activity) on a fixed daily schedule.
 
-Outputs are **TOML + safe HTML wrappers**, suitable for:
+Outputs are **TOML + JSON + safe HTML wrappers**, suitable for:
 
 * static hosting (e.g. GitHub Pages),
 * ingestion by LLMs,
@@ -21,8 +21,8 @@ On execution, `gh_status`:
    * **Repository inventory**
    * **Aggregated TODOs**
    * **Recent public activity (7-day and 30-day windows)**
-4. Serializes each dataset to **TOML**, plus a minimal **HTML wrapper** for human inspection.
-5. Writes results to a target directory (default: `docs/`).
+4. Serializes each dataset to **TOML** and **JSON**, plus a minimal **HTML wrapper** for human inspection.
+5. Writes results to a target directory (default: `docs/`), where a lightweight browser slideshow can read the JSON files directly.
 
 Execution is **time-gated** to avoid unnecessary API usage.
 
@@ -34,17 +34,23 @@ By default, the following files are generated:
 
 ```text
 docs/
+├── inventory.json
 ├── inventory.toml
 ├── inventory.toml.html
+├── todos.json
 ├── todos.toml
 ├── todos.toml.html
+├── latest-7d.json
 ├── latest-7d.toml
 ├── latest-7d.toml.html
+├── latest-30d.json
 ├── latest-30d.toml
-└── latest-30d.toml.html
+├── latest-30d.toml.html
+├── app.js
+└── index.html
 ```
 
-All TOML files conform to explicit Pydantic schemas (`schemas.py`).
+All TOML and JSON files conform to explicit Pydantic schemas (`schemas.py`).
 
 ---
 
@@ -185,8 +191,11 @@ Exit codes:
 | `builder.py`                    | Data assembly and transformation            |
 | `github_client.py`              | Cached GitHub API access                    |
 | `schemas.py`                    | Canonical data contracts (Pydantic)         |
-| `writers.py`                    | TOML + HTML serialization                   |
-| `resources/wrapper.html.jinja2` | Safe HTML viewer                            |
+| `writers.py`                    | TOML + JSON + HTML serialization            |
+| `resources/wrapper.html.jinja2` | Safe HTML feed viewer                       |
+| `resources/dashboard.html.jinja2` | Slideshow app shell landing page         |
+| `web/app.ts`                    | Framework-free TypeScript slideshow source  |
+| `docs/app.js`                   | Checked-in compiled browser runtime         |
 
 ---
 
@@ -232,6 +241,5 @@ Low-risk extension points:
 
 * Enable more TODO sources
 * Add hint generation (`Hints` schema already stubbed)
-* Emit JSON alongside TOML
 * Add repo filtering rules
 * Add cron / GitHub Actions wrapper

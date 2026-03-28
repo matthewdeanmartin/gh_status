@@ -1,6 +1,7 @@
 # gh_status/writers.py
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -65,6 +66,24 @@ def write_toml(path: Path, data: BaseModel) -> None:
         logger.info("Successfully wrote TOML file to %s", path)
     except Exception as e:
         logger.error("Failed to write TOML file to %s: %s", path, e)
+
+
+def write_json(path: Path, data: BaseModel | dict[str, Any]) -> None:
+    """
+    Serializes a Pydantic model or plain dictionary to a JSON file.
+
+    Args:
+        path: The destination file path (e.g., docs/inventory.json).
+        data: The data structure to write.
+    """
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = data.model_dump(mode="json", exclude_none=True) if isinstance(data, BaseModel) else data
+        path.write_text(json.dumps(payload, indent=2, sort_keys=False), encoding="utf-8")
+        logger.info("Successfully wrote JSON file to %s", path)
+    except Exception as e:
+        logger.error("Failed to write JSON file to %s: %s", path, e)
+        raise
 
 
 def write_html_wrapper(toml_path: Path) -> None:
@@ -208,10 +227,30 @@ def write_dashboard(
             warnings.append("Commit SHA was not provided to the build environment.")
 
         links = [
-            {"label": "Inventory", "toml": "inventory.toml", "html": "inventory.toml.html"},
-            {"label": "TODOs", "toml": "todos.toml", "html": "todos.toml.html"},
-            {"label": "Latest 7 days", "toml": "latest-7d.toml", "html": "latest-7d.toml.html"},
-            {"label": "Latest 30 days", "toml": "latest-30d.toml", "html": "latest-30d.toml.html"},
+            {
+                "label": "Inventory",
+                "toml": "inventory.toml",
+                "html": "inventory.toml.html",
+                "json": "inventory.json",
+            },
+            {
+                "label": "TODOs",
+                "toml": "todos.toml",
+                "html": "todos.toml.html",
+                "json": "todos.json",
+            },
+            {
+                "label": "Latest 7 days",
+                "toml": "latest-7d.toml",
+                "html": "latest-7d.toml.html",
+                "json": "latest-7d.json",
+            },
+            {
+                "label": "Latest 30 days",
+                "toml": "latest-30d.toml",
+                "html": "latest-30d.toml.html",
+                "json": "latest-30d.json",
+            },
         ]
 
         html_content = template.render(
@@ -226,6 +265,12 @@ def write_dashboard(
             top_repos_30d=list(activity_30d.insights.top_repos),
             busiest_day=activity_30d.insights.busiest_local_day,
             streak_days=activity_30d.insights.streak_days,
+            bootstrap={
+                "username": getattr(inventory, "username", "unknown"),
+                "generated_utc": str(getattr(inventory, "generated_utc", "")),
+                "build_info": build_info,
+                "links": links,
+            },
         )
 
         dashboard_path.write_text(html_content, encoding="utf-8")
