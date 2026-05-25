@@ -136,4 +136,6 @@ init_typed = true
 warn_required_dynamic_aliases = true
 
 [tool.uv]
+
+[tool.uv.pip]
 universal = true
