@@ -135,3 +135,5 @@ init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
 
+[tool.uv]
+universal = true
